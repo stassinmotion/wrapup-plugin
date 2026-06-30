@@ -1,5 +1,5 @@
 {
-  "description": "Auto-trigger wrapup before /compact, on session end, and on /clear",
+  "description": "Auto-trigger wrapup before /compact, on session end, and when /remember runs",
   "hooks": {
     "PreCompact": [
       {
@@ -23,11 +23,11 @@
     ],
     "UserPromptSubmit": [
       {
-        "matcher": "^/clear\\b",
+        "matcher": "^/remember\\b",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/wrapup-trigger.sh\" Clear"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/wrapup-trigger.sh\" Remember"
           }
         ]
       }
