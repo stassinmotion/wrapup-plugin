@@ -1,5 +1,5 @@
 {
-  "description": "Auto-trigger wrapup before /compact, on session end, and when /remember runs",
+  "description": "Auto-trigger wrapup before /compact, on session end, and on '/remember wrap' (with a dedup guard)",
   "hooks": {
     "PreCompact": [
       {
