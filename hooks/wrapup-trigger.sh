@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
-# Emits a systemMessage telling Claude to invoke the wrapup skill.
+# Emits an instruction telling Claude to invoke the wrapup skill.
 #
 # Triggers:
 #   PreCompact   -> always (before context compaction)
 #   SessionEnd   -> always (on exit)
 #   Remember     -> ONLY when the user typed "/remember wrap" (plain /remember is ignored)
 #
+# Output: uses hookSpecificOutput.additionalContext (the mechanism that actually
+# injects an actionable instruction into Claude's context). systemMessage alone is
+# only shown to the user and does NOT make Claude act — that was the original bug.
+#
 # Dedup guard: if a wrapup was already triggered within DEDUP_MINUTES, the trigger
-# is suppressed to avoid a duplicate NotebookLM push (e.g. "/remember wrap" followed
-# shortly by SessionEnd). Manual /wrapup bypasses this entirely.
+# is suppressed to avoid a duplicate NotebookLM push. Manual /wrapup bypasses this.
 
 set -euo pipefail
 
@@ -16,12 +19,27 @@ EVENT="${1:-Unknown}"
 DEDUP_MINUTES=10
 STATE_FILE="${HOME}/.claude/wrapup-last-run.txt"
 
+# Map our internal event name to the real Claude Code hook event name.
+case "$EVENT" in
+  Remember)   HOOK_EVENT="UserPromptSubmit" ;;
+  PreCompact) HOOK_EVENT="PreCompact" ;;
+  SessionEnd) HOOK_EVENT="SessionEnd" ;;
+  *)          HOOK_EVENT="UserPromptSubmit" ;;
+esac
+
 # Read the hook payload from stdin (UserPromptSubmit carries the prompt text)
 PAYLOAD="$(cat 2>/dev/null || true)"
 
-# Emit a JSON result. Args: $1 = systemMessage (plain text, no quotes/backslashes)
+# Emit an instruction Claude will act on. $1 = message text.
 emit() {
-  printf '{"continue": true, "suppressOutput": false, "systemMessage": "%s"}\n' "$1"
+  python3 -c '
+import json, sys
+event, msg = sys.argv[1], sys.argv[2]
+print(json.dumps({
+    "continue": True,
+    "hookSpecificOutput": {"hookEventName": event, "additionalContext": msg},
+    "systemMessage": msg,
+}))' "$HOOK_EVENT" "$1"
 }
 
 # Let the prompt through silently without nagging Claude, then stop.
@@ -51,9 +69,7 @@ if [ -f "$STATE_FILE" ]; then
   if printf '%s' "$LAST" | grep -qE '^[0-9]+$'; then
     AGE=$(( NOW - LAST ))
     if [ "$AGE" -lt $(( DEDUP_MINUTES * 60 )) ]; then
-      MINS=$(( AGE / 60 ))
-      emit "A wrapup was already triggered ${MINS} min ago (within the ${DEDUP_MINUTES}-minute dedup window), so this automatic trigger is being skipped to avoid a duplicate NotebookLM push. To force another full wrapup now, run /wrapup manually."
-      exit 0
+      skip
     fi
   fi
 fi
@@ -70,7 +86,7 @@ case "$EVENT" in
     emit "The session is ending (exiting Claude Code). If meaningful work happened this session, invoke the wrapup skill now to save memories and push a session summary to NotebookLM. Skip if the session was trivial."
     ;;
   Remember)
-    emit "The user ran '/remember wrap'. After the remember skill saves its handoff note, also invoke the wrapup skill (Skill tool, name 'wrapup') to summarize this session, save key memories, and push a session log to the NotebookLM AI Brain notebook. Context is still intact, so do the full wrapup now."
+    emit "The user ran '/remember wrap'. After the remember skill saves its handoff note, also invoke the wrapup skill (Skill tool, name 'wrapup') NOW to summarize this session, save key memories, and push a session log to the NotebookLM AI Brain notebook. Context is still intact, so do the full wrapup."
     ;;
   *)
     emit "wrapup-trigger fired with unknown event: ${EVENT}"
