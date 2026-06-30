@@ -1,0 +1,36 @@
+{
+  "description": "Auto-trigger wrapup before /compact, on session end, and on /clear",
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/wrapup-trigger.sh\" PreCompact"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/wrapup-trigger.sh\" SessionEnd"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "^/clear\\b",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/wrapup-trigger.sh\" Clear"
+          }
+        ]
+      }
+    ]
+  }
+}
