@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "wrapup",
-      "description": "End-of-session wrap-up — summarizes the session, saves key memories, and pushes a session log to the user's AI Brain NotebookLM notebook. Auto-triggers on PreCompact, SessionEnd, and /clear.",
+      "description": "End-of-session wrap-up — summarizes the session, saves key memories, and pushes a session log to the user's AI Brain NotebookLM notebook. Auto-triggers on PreCompact, SessionEnd, and '/remember wrap'.",
       "author": {
         "name": "Yamaiky Gamez"
       },
