@@ -58,11 +58,18 @@ Rules:
 
 ## Step 3: Write Session Summary
 
-Create a markdown session summary with today's date. Keep it concise but complete.
+First get the current date AND time — this is used to uniquely label the summary, so wrapups run multiple times a day never collide or look identical:
+
+```bash
+date +"%Y-%m-%d %H:%M"     # e.g. 2026-06-30 14:30  (use this in the heading + title)
+date +"%Y-%m-%d-%H%M"      # e.g. 2026-06-30-1430   (use this in the filename)
+```
+
+Create a markdown session summary stamped with date + time. Keep it concise but complete.
 
 Format:
 ```markdown
-# Session Summary — YYYY-MM-DD
+# Session Summary — YYYY-MM-DD HH:MM
 
 ## What We Did
 - Bullet points of key work completed
@@ -80,19 +87,21 @@ Format:
 - List of tools, repos, services involved
 ```
 
-Save this to a temp file in the OS-appropriate temp directory:
-- **Windows**: `$env:TEMP\session-summary-YYYY-MM-DD.md` (e.g. `C:\Users\stass\AppData\Local\Temp\session-summary-2026-05-19.md`)
-- **macOS/Linux**: `/tmp/session-summary-YYYY-MM-DD.md`
+Save this to a temp file in the OS-appropriate temp directory, with the date+time in the filename:
+- **Windows**: `$env:TEMP\session-summary-YYYY-MM-DD-HHMM.md` (e.g. `C:\Users\stass\AppData\Local\Temp\session-summary-2026-06-30-1430.md`)
+- **macOS/Linux**: `/tmp/session-summary-YYYY-MM-DD-HHMM.md`
 
-If there are multiple sessions in the same day, append a counter: `session-summary-YYYY-MM-DD-2.md`
+The time component guarantees uniqueness even across several sessions in one day — no manual counters needed.
 
 ## Step 4: Push to NotebookLM Brain
 
-Add the session summary as a source to the Brain notebook:
+Add the session summary as a source, giving it an explicit date+time title so the NotebookLM source list shows distinct, sortable entries (NotebookLM otherwise labels by date only, making same-day pushes ambiguous):
 
 ```bash
-notebooklm source add <PATH_TO_SUMMARY_FILE> --notebook <BRAIN_NOTEBOOK_ID>
+notebooklm source add <PATH_TO_SUMMARY_FILE> --notebook <BRAIN_NOTEBOOK_ID> --title "Session YYYY-MM-DD HH:MM — <short topic>"
 ```
+
+Always pass `--title` with the date, time, and a few-word topic (e.g. `"Session 2026-06-30 14:30 — wrapup trigger fix"`). Without it, multiple same-day sources are hard to tell apart.
 
 The `notebooklm` CLI should be on PATH. Fallback locations if not found:
 - **Windows**: `%USERPROFILE%\.notebooklm-venv\Scripts\notebooklm.exe`
